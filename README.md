@@ -14,15 +14,31 @@ A small tool to compare two folders, check for duplicates, copy one set to the o
 
 ## Requirements
 
-- Python 3.8+ (uses standard library only — `tkinter`, `shutil`, `pathlib`)
-- [`fdupes`](https://github.com/adrianlopezroche/fdupes) on `PATH` (Linux/macOS). On Debian/Ubuntu: `sudo apt install fdupes`.
+- Python 3.8+ (standard library only — no `pip install` needed)
+- `tkinter` for the GUI (bundled with Python on macOS/Windows; on Debian/Ubuntu/Mint it's a separate package — `python3-tk`)
+- [`fdupes`](https://github.com/adrianlopezroche/fdupes) **or** [`jdupes`](https://codeberg.org/jbruchon/jdupes) on `PATH` for duplicate checking. The app detects either automatically. Without one installed, the sync still works — only the **Check Duplicates** button is disabled.
 
-## Usage
+## Install & run
 
+**Linux (Debian/Ubuntu/Mint):**
 ```bash
-python3 Folder_sync_gui.py     # GUI
-python3 Compare_folders.py     # CLI (interactive prompts)
+sudo apt install python3 python3-tk fdupes git
+git clone https://github.com/enrico2468/Foldercompare.git
+cd Foldercompare
+python3 Folder_sync_gui.py
 ```
+
+**macOS:**
+```bash
+brew install fdupes git
+git clone https://github.com/enrico2468/Foldercompare.git
+cd Foldercompare
+python3 Folder_sync_gui.py
+```
+
+**Windows:** install [Python](https://www.python.org/downloads/) (tkinter is bundled), then [`jdupes`](https://codeberg.org/jbruchon/jdupes) for duplicate checking (native Windows builds available; `fdupes` itself has no Windows port). Clone the repo and run `python Folder_sync_gui.py`.
+
+For the CLI version: `python3 Compare_folders.py` (interactive prompts).
 
 In the GUI:
 

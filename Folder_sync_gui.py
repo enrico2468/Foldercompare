@@ -17,6 +17,12 @@ from typing import Dict, Tuple, List, Optional
 
 CONFIG_PATH = Path.home() / ".config" / "foldercompare" / "state.json"
 
+def find_dupes_tool() -> Optional[str]:
+    """Return path to fdupes or jdupes (drop-in compatible), or None."""
+    return shutil.which('fdupes') or shutil.which('jdupes')
+
+DUPES_TOOL = find_dupes_tool()
+
 def format_size(num_bytes: int) -> str:
     """Human-readable byte count (e.g. '4.2 GB')."""
     size = float(num_bytes)
@@ -195,21 +201,28 @@ def execute_sync(plan: List[Tuple[str, str, str]],
 
 def find_cross_duplicates(source: str, destination: str) -> List[Dict[str, List[str]]]:
     """
-    Run fdupes between source and destination, return groups that span both.
-    Each group is {'source': [paths in source], 'dest': [paths in dest]}.
+    Run fdupes (or jdupes) between source and destination, return groups
+    that span both. Each group is {'source': [paths in source], 'dest': [paths in dest]}.
     """
+    tool = find_dupes_tool()
+    if tool is None:
+        raise FileNotFoundError(
+            "Neither 'fdupes' nor 'jdupes' was found on PATH. "
+            "Install one of them to enable duplicate checking."
+        )
+
     src = os.path.abspath(source)
     dest = os.path.abspath(destination)
     src_prefix = src.rstrip(os.sep) + os.sep
     dest_prefix = dest.rstrip(os.sep) + os.sep
 
     result = subprocess.run(
-        ['fdupes', '-r', src, dest],
+        [tool, '-r', src, dest],
         capture_output=True, text=True, check=False
     )
-    # fdupes exits non-zero on certain conditions but still produces useful output
+    # fdupes/jdupes exit non-zero on certain conditions but still produce useful output
     if result.returncode not in (0, 1) and not result.stdout:
-        raise RuntimeError(f"fdupes failed: {result.stderr.strip()}")
+        raise RuntimeError(f"{Path(tool).name} failed: {result.stderr.strip()}")
 
     groups: List[List[str]] = []
     current: List[str] = []
@@ -259,6 +272,13 @@ class FolderSyncApp:
             self.dest_path.set(last_dest)
 
         self._build_ui()
+
+        # Disable duplicate check if no tool is installed
+        if DUPES_TOOL is None:
+            self.check_dupes_btn.config(state=tk.DISABLED)
+            self._set_status(
+                "Note: install 'fdupes' (or 'jdupes') to enable duplicate checking. Sync still works."
+            )
 
     def _build_ui(self):
         # Main container with padding
