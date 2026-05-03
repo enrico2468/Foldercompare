@@ -9,6 +9,8 @@ A small tool to compare two folders, check for duplicates, copy one set to the o
 - **Duplicate detection**: uses `fdupes` to find byte-identical files between source and destination before copying, so you don't end up with renamed duplicates.
 - **Pattern-aware renaming**: detects naming patterns (e.g. `Holiday 1.jpg`, `Holiday 2.jpg`) in the destination and continues numbering for incoming files.
 - **Source cleanup**: after a successful sync, optionally deletes the copied files from the source. Subfolders are preserved — only files are removed.
+- **Size + free-space preview**: the preview shows total bytes to copy and free space on destination, with a warning if there isn't enough room.
+- **Remembers last folders**: the last source/destination pair is saved to `~/.config/foldercompare/state.json` and restored on next launch.
 
 ## Requirements
 

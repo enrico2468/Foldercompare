@@ -6,6 +6,7 @@ A simple desktop app to sync media files between folders.
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
+import json
 import shutil
 import os
 import re
@@ -13,6 +14,30 @@ import subprocess
 import threading
 from pathlib import Path
 from typing import Dict, Tuple, List, Optional
+
+CONFIG_PATH = Path.home() / ".config" / "foldercompare" / "state.json"
+
+def format_size(num_bytes: int) -> str:
+    """Human-readable byte count (e.g. '4.2 GB')."""
+    size = float(num_bytes)
+    for unit in ('B', 'KB', 'MB', 'GB', 'TB'):
+        if size < 1024 or unit == 'TB':
+            return f"{size:.1f} {unit}" if unit != 'B' else f"{int(size)} B"
+        size /= 1024
+    return f"{size:.1f} TB"
+
+def load_state() -> Dict[str, str]:
+    try:
+        return json.loads(CONFIG_PATH.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+def save_state(state: Dict[str, str]) -> None:
+    try:
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CONFIG_PATH.write_text(json.dumps(state, indent=2))
+    except OSError:
+        pass
 
 # ============================================================================
 # SYNC LOGIC (extracted from compare_folders.py)
@@ -224,6 +249,15 @@ class FolderSyncApp:
         self.plan: List[Tuple[str, str, str]] = []
         self.duplicate_groups: List[Dict[str, List[str]]] = []
 
+        # Restore last-used folders if they still exist
+        state = load_state()
+        last_src = state.get('source', '')
+        last_dest = state.get('destination', '')
+        if last_src and os.path.isdir(last_src):
+            self.source_path.set(last_src)
+        if last_dest and os.path.isdir(last_dest):
+            self.dest_path.set(last_dest)
+
         self._build_ui()
 
     def _build_ui(self):
@@ -328,15 +362,25 @@ class FolderSyncApp:
 
         ttk.Button(button_frame, text="Clear", command=self.clear_all).pack(side=tk.RIGHT)
 
+    def _persist_paths(self):
+        save_state({
+            'source': self.source_path.get().strip(),
+            'destination': self.dest_path.get().strip(),
+        })
+
     def browse_source(self):
-        folder = filedialog.askdirectory(title="Select Source Folder")
+        initial = self.source_path.get().strip() or os.path.expanduser("~")
+        folder = filedialog.askdirectory(title="Select Source Folder", initialdir=initial)
         if folder:
             self.source_path.set(folder)
+            self._persist_paths()
 
     def browse_destination(self):
-        folder = filedialog.askdirectory(title="Select Destination Folder")
+        initial = self.dest_path.get().strip() or os.path.expanduser("~")
+        folder = filedialog.askdirectory(title="Select Destination Folder", initialdir=initial)
         if folder:
             self.dest_path.set(folder)
+            self._persist_paths()
 
     def _update_preview(self, text: str):
         """Thread-safe preview update"""
@@ -364,6 +408,7 @@ class FolderSyncApp:
         if not os.path.isdir(destination):
             messagebox.showerror("Invalid Destination", "Destination folder does not exist.")
             return None
+        self._persist_paths()
         return source, destination
 
     def check_duplicates(self):
@@ -498,10 +543,25 @@ class FolderSyncApp:
 
                     lines.append(f"  {line}{arrow}{dest_line}")
 
-                preview_text = f"Files to sync ({len(lines)} total):\n\n" + "\n".join(lines)
-                self._update_preview(preview_text)
-                self._set_status(f"Ready to sync {len(lines)} files. Click 'Sync Now' to proceed.")
-                self.sync_btn.config(state=tk.NORMAL)
+                total_bytes = 0
+                for src, _, _ in self.plan:
+                    try:
+                        total_bytes += os.path.getsize(src)
+                    except OSError:
+                        pass
+                free_bytes = shutil.disk_usage(destination).free
+                size_line = f"Total: {format_size(total_bytes)} — {format_size(free_bytes)} free on destination"
+                if total_bytes > free_bytes:
+                    size_line = "⚠️ NOT ENOUGH SPACE — " + size_line
+
+                header = f"Files to sync ({len(lines)} total):\n{size_line}\n\n"
+                self._update_preview(header + "\n".join(lines))
+                if total_bytes > free_bytes:
+                    self._set_status(f"⚠️ Need {format_size(total_bytes)} but only {format_size(free_bytes)} free.")
+                    self.sync_btn.config(state=tk.DISABLED)
+                else:
+                    self._set_status(f"Ready: {len(lines)} files, {format_size(total_bytes)}. Click 'Sync Now'.")
+                    self.sync_btn.config(state=tk.NORMAL)
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to generate preview:\n{e}")
