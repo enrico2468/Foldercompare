@@ -11,21 +11,41 @@ import re
 from pathlib import Path
 
 # Supported extensions (grouped by type)
-IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
-VIDEO_EXTS = {'.mp4', '.mov', '.avi', '.mkv', '.webm'}
-SUPPORTED_EXTS = IMAGE_EXTS | VIDEO_EXTS
+IMAGE_EXTS = {
+    '.jpg', '.jpeg', '.jfif', '.png', '.gif', '.bmp', '.webp', '.avif',
+    '.tiff', '.tif', '.heic', '.heif',
+    '.svg', '.psd', '.xcf',
+    '.raw', '.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.raf', '.rw2', '.pef',
+}
+VIDEO_EXTS = {
+    '.mp4', '.m4v', '.mov', '.avi', '.mkv', '.webm', '.wmv',
+    '.mpg', '.mpeg', '.3gp', '.flv', '.ogv', '.vob',
+    '.ts', '.mts', '.m2ts',
+}
+AUDIO_EXTS = {
+    '.mp3', '.m4a', '.aac', '.wav', '.flac', '.ogg', '.opus', '.wma', '.aiff',
+}
+DOCUMENT_EXTS = {
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.odt', '.ods', '.odp', '.txt', '.rtf', '.md', '.csv',
+}
+SUPPORTED_EXTS = IMAGE_EXTS | VIDEO_EXTS | AUDIO_EXTS | DOCUMENT_EXTS
 
 def natural_sort_key(filename):
     parts = re.split(r'(\d+)', filename)
     return [int(p) if p.isdigit() else p.lower() for p in parts]
 
 def get_media_type(ext):
-    """Return 'image' or 'video' based on extension."""
+    """Return 'image', 'video', 'audio', 'document', or None based on extension."""
     ext = ext.lower()
     if ext in IMAGE_EXTS:
         return 'image'
     elif ext in VIDEO_EXTS:
         return 'video'
+    elif ext in AUDIO_EXTS:
+        return 'audio'
+    elif ext in DOCUMENT_EXTS:
+        return 'document'
     return None
 
 def get_media_files(folder):

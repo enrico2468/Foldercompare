@@ -11,6 +11,11 @@ A small tool to compare two folders, check for duplicates, copy one set to the o
 - **Source cleanup**: after a successful sync, optionally deletes the copied files from the source. Subfolders are preserved — only files are removed.
 - **Size + free-space preview**: the preview shows total bytes to copy and free space on destination, with a warning if there isn't enough room.
 - **Remembers last folders**: the last source/destination pair is saved to `~/.config/foldercompare/state.json` and restored on next launch.
+- **Wide format support**: images (JPG/PNG/GIF/BMP/WebP/AVIF/HEIC/TIFF/SVG/PSD/XCF and RAW formats — CR2, CR3, NEF, ARW, DNG, ORF, RAF, RW2, PEF), videos (MP4/M4V/MOV/AVI/MKV/WebM/WMV/MPG/MPEG/3GP/FLV/OGV/VOB/TS/MTS/M2TS), audio (MP3/M4A/AAC/WAV/FLAC/OGG/Opus/WMA/AIFF), and documents (PDF/DOC/DOCX/XLS/XLSX/PPT/PPTX/ODT/ODS/ODP/TXT/RTF/MD/CSV).
+- **Skipped-file visibility**: the preview shows a count and breakdown of files that were filtered out (e.g. unknown extensions), so nothing disappears silently.
+- **"Include all files" toggle**: bypasses the extension filter for one-off full copies — unknown file types keep their original names.
+- **Per-type renumbering toggles**: independently choose whether images, videos, audio, and documents get renamed to match the destination's numbering pattern, or keep their original filenames. Defaults: images/videos/audio on, documents off.
+- **Filename-collision strategy**: when a non-renumbered file would overwrite an existing file in destination, choose what happens — add a version suffix (`file (2).ext`, default), add a date suffix, skip, or overwrite. Conflict count is shown in the preview before sync runs.
 
 ## Requirements
 
